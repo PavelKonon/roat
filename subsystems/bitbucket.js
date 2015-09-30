@@ -16,6 +16,20 @@ function processWebHook(log, message, app, config) {
         return true;
     }
 
+    if (!Array.isArray(actionConfig)) {
+        actionConfig = [actionConfig];
+    } else {
+        actionConfig = actionConfig.slice(0);//clone
+    }
+
+    for (var i = 0; i < message.commits.length; i++) {
+        var branch = message.commits[i].branch;
+        var task = (repo + '/' + branch).replace(/^\//,'').replace(/\/$/,'').replace(/\//g,'-');
+        if (actionConfig.indexOf(task) === -1) {
+            actionConfig.push(task);
+        }
+    }
+
     log.info("Received update message for repository: " + repo);
     utils.triggerSingleOrArrayOfActions(
         log, actionConfig, 1000,
@@ -30,7 +44,7 @@ module.exports = function (log, app, expressApp, configArgument) {
 
     expressApp.post('/bitbucket', function (req, res, next) {
         var reqLog = log.createSublogger(
-          req.socket.remoteAddress + ":" + req.socket.remotePort);
+            req.socket.remoteAddress + ":" + req.socket.remotePort);
 
         var contentType = req.headers["content-type"];
 
